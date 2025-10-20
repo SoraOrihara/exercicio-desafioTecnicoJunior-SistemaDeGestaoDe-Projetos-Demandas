@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,8 +20,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.Estudo.DesafioTecnico.dtos.ProjectRequestDto;
 import com.Estudo.DesafioTecnico.dtos.ProjectResponseDto;
-import com.Estudo.DesafioTecnico.model.ProjectModel;
 import com.Estudo.DesafioTecnico.service.ProjectService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/project")
@@ -33,14 +36,14 @@ public class ProjectController {
 	}
 	
 	@PostMapping(value="/projects", produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<ProjectResponseDto> createProject(@RequestBody ProjectRequestDto projectModel) {
+	public ResponseEntity<ProjectResponseDto> createProject(@RequestBody @Valid ProjectRequestDto projectModel) {
 		logger.info("Received request to create project: {}", projectModel.name());
 		ProjectResponseDto createdProject = projectService.saveProject(projectModel);
 		return ResponseEntity.ok(createdProject);
 	}
 	
 	@GetMapping(value ="/projects", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<Page<ProjectResponseDto>> getProjects(Pageable pageable) {
+	public ResponseEntity<Page<ProjectResponseDto>> getProjects(@PageableDefault(size = 10, sort = "nome", direction = Sort.Direction.ASC)Pageable pageable) {
 		logger.info("Received request to get projects pageable: {}", pageable);
 		Page<ProjectResponseDto> projects = projectService.getProjectsPageable(pageable);
 		return ResponseEntity.ok(projects);
