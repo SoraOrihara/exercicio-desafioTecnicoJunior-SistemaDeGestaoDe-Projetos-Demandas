@@ -8,7 +8,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import com.Estudo.DesafioTecnico.dtos.ProjectRequestDto;
+import com.Estudo.DesafioTecnico.dtos.ProjectResponseDto;
 import com.Estudo.DesafioTecnico.exceptions.ResourceNotFoundException;
+import com.Estudo.DesafioTecnico.mapper.ProjectMapper;
 import com.Estudo.DesafioTecnico.model.ProjectModel;
 import com.Estudo.DesafioTecnico.repositories.ProjectRepository;
 
@@ -17,43 +20,59 @@ import jakarta.transaction.Transactional;
 @Service
 public class ProjectService {
 	private ProjectRepository projectRepository;
+	private ProjectMapper mapper;
 	private Logger logger = LoggerFactory.getLogger(ProjectService.class.getName());
 
-	public ProjectService(ProjectRepository projectRepository) {
+	public ProjectService(ProjectRepository projectRepository,ProjectMapper mapper) {
 		this.projectRepository = projectRepository;
+		this.mapper = mapper;
 	}
 	@Transactional
-	public Page<ProjectModel> getProjectsPageable(Pageable pageable) {
+	public Page<ProjectResponseDto> getProjectsPageable(Pageable pageable) {
 		logger.info("Fetching projects pageable: {}", pageable);
-		return projectRepository.findAll(pageable);
+		Page<ProjectModel> projects =projectRepository.findAll(pageable);
+		//transformar model em response dto
+		Page<ProjectResponseDto> responseDtos= projects.map(mapper::toDto);
+		//retornar response dto
+		return responseDtos;
 	}
 	@Transactional
-	public ProjectModel getProjectById(UUID projectId) {
+	public ProjectResponseDto getProjectById(UUID projectId) {
 		logger.info("Fetching project by ID: {}", projectId);
-		return projectRepository.findById(projectId).orElseGet(() -> {
+		ProjectModel project =projectRepository.findById(projectId).orElseGet(() -> {
 			logger.warn("Project not Found with Id: ", projectId);
 			throw new ResourceNotFoundException("Project not found");
 		});
+		//transformar model em response dto
+		ProjectResponseDto responseDto = mapper.toDto(project);
+		//retornar response dto
+		return responseDto;
 	}
 	@Transactional
-	public ProjectModel saveProject(ProjectModel projectModel) {
-		logger.info("Saving new project: {}", projectModel.getName());
-		return projectRepository.save(projectModel);
+	public ProjectResponseDto saveProject(ProjectRequestDto projectModel) {
+		logger.info("Saving new project: {}", projectModel.name());
+		ProjectModel project = mapper.toModel(projectModel);
+		ProjectModel projectSaved =projectRepository.save(project);
+		//transformar model em response dto
+		return mapper.toDto(projectSaved);
 	}
 	@Transactional
-	public ProjectModel updateProject(UUID projectId, ProjectModel projectModel) {
-		if (projectRepository.existsById(projectId)==false) {
+	public ProjectResponseDto updateProject(UUID projectId, ProjectRequestDto projectModel) {
+		
+		
+		//pegar o model existente
+		ProjectModel existingProject = projectRepository.findById(projectId).orElseThrow(() -> {
 			logger.warn("Project not Found with Id: ", projectId);
 			throw new ResourceNotFoundException("Project not found");
-		}
+		});
+		//atualizar os campos
+		mapper.updateModelFromDto(projectModel, existingProject);
 		
-		ProjectModel existingProject = getProjectById(projectId);
-		existingProject.setName(projectModel.getName());
-		existingProject.setDescription(projectModel.getDescription());
-		existingProject.setStartDate(projectModel.getStartDate());
-		existingProject.setEndDate(projectModel.getEndDate());
+		
 		logger.info("Updating project with ID: {}", projectId);
-		return projectRepository.save(existingProject);
+		//salvar o model atualizado
+		ProjectModel projectSaved=projectRepository.save(existingProject);
+		return mapper.toDto(projectSaved);
 	}
 	@Transactional
 	public void deleteProject(UUID projectId) {

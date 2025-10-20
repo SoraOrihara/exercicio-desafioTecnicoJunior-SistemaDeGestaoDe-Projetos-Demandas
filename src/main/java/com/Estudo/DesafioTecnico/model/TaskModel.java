@@ -1,6 +1,7 @@
 package com.Estudo.DesafioTecnico.model;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.UUID;
 
@@ -40,7 +41,7 @@ public class TaskModel implements Serializable {
 	@Enumerated(EnumType.STRING)
 	private EnumPriority priority;
 
-	private Date dueDate;
+	private LocalDate dueDate;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "projectId", nullable = false)
@@ -51,7 +52,7 @@ public class TaskModel implements Serializable {
 
 	}
 
-	public TaskModel(String title, String description, EnumStatus status, EnumPriority priority, Date dueDate,
+	public TaskModel(String title, String description, EnumStatus status, EnumPriority priority, LocalDate dueDate,
 			ProjectModel project) {
 		this.title = title;
 		this.description = description;
@@ -93,11 +94,11 @@ public class TaskModel implements Serializable {
 		this.priority = priority;
 	}
 
-	public Date getDueDate() {
+	public LocalDate getDueDate() {
 		return dueDate;
 	}
 
-	public void setDueDate(Date dueDate) {
+	public void setDueDate(LocalDate dueDate) {
 		this.dueDate = dueDate;
 	}
 

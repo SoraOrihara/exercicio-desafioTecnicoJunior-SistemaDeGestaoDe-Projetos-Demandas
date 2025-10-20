@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.Estudo.DesafioTecnico.dtos.ProjectRequestDto;
+import com.Estudo.DesafioTecnico.dtos.ProjectResponseDto;
 import com.Estudo.DesafioTecnico.model.ProjectModel;
 import com.Estudo.DesafioTecnico.service.ProjectService;
 
@@ -31,16 +33,16 @@ public class ProjectController {
 	}
 	
 	@PostMapping(value="/projects", produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<ProjectModel> createProject(@RequestBody ProjectModel projectModel) {
-		logger.info("Received request to create project: {}", projectModel.getName());
-		ProjectModel createdProject = projectService.saveProject(projectModel);
+	public ResponseEntity<ProjectResponseDto> createProject(@RequestBody ProjectRequestDto projectModel) {
+		logger.info("Received request to create project: {}", projectModel.name());
+		ProjectResponseDto createdProject = projectService.saveProject(projectModel);
 		return ResponseEntity.ok(createdProject);
 	}
 	
 	@GetMapping(value ="/projects", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<Page<ProjectModel>> getProjects(Pageable pageable) {
+	public ResponseEntity<Page<ProjectResponseDto>> getProjects(Pageable pageable) {
 		logger.info("Received request to get projects pageable: {}", pageable);
-		Page<ProjectModel> projects = projectService.getProjectsPageable(pageable);
+		Page<ProjectResponseDto> projects = projectService.getProjectsPageable(pageable);
 		return ResponseEntity.ok(projects);
 	}
 	

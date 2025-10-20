@@ -8,7 +8,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import com.Estudo.DesafioTecnico.dtos.TaskRequestDto;
+import com.Estudo.DesafioTecnico.dtos.TaskResponseDto;
+import com.Estudo.DesafioTecnico.dtos.TaskUpdateDto;
 import com.Estudo.DesafioTecnico.exceptions.ResourceNotFoundException;
+import com.Estudo.DesafioTecnico.mapper.TaskMapper;
 import com.Estudo.DesafioTecnico.model.ProjectModel;
 import com.Estudo.DesafioTecnico.model.TaskModel;
 import com.Estudo.DesafioTecnico.model.enums.EnumPriority;
@@ -23,58 +27,75 @@ public class TaskService {
 
 	private TaskRepository taskRepository;
 	private ProjectRepository projectRepository;
+	private TaskMapper taskMapper;
 	private Logger logger = LoggerFactory.getLogger(TaskService.class.getName());
 
-	public TaskService(TaskRepository taskRepository, ProjectRepository projectRepository) {
+	public TaskService(TaskRepository taskRepository, ProjectRepository projectRepository, TaskMapper taskMapper) {
 		this.taskRepository = taskRepository;
 		this.projectRepository = projectRepository;
+		this.taskMapper = taskMapper;
 	}
 	@Transactional
-	public Page<TaskModel> getTasksByStatusPriorityProjectId(UUID projectId,EnumStatus status,EnumPriority priority, Pageable pageable) {
+	public Page<TaskResponseDto> getTasksByStatusPriorityProjectId(UUID projectId,EnumStatus status,EnumPriority priority, Pageable pageable) {
 		logger.info("Fetching tasks by Status, Priority and Project ID: {}", projectId);
+		//transformar projectId em projectModel
 		ProjectModel project = projectRepository.findById(projectId).
 				orElseThrow(() -> {
 					logger.warn("Project not Found with Id: ", projectId);
 					throw new ResourceNotFoundException("Project not found");
 				});
-		return taskRepository.findByProjectAndStatusAndPriority(project, status, priority, pageable);
+		//listar tasks filtradas
+		Page<TaskModel> tasks =taskRepository.findByProjectAndStatusAndPriority(project, status, priority, pageable);
+		//transformar model em response dto
+		Page<TaskResponseDto> responseDtos = tasks.map(taskMapper::toDto);
+		//retornar response dto
+		return responseDtos;
 	}
 	@Transactional
-	public Page<TaskModel> getTasksPageable(Pageable pageable) {
+	public Page<TaskResponseDto> getTasksPageable(Pageable pageable) {
 		logger.info("Fetching tasks pageable: {}", pageable);
-		return taskRepository.findAll(pageable);
+		//listar tasks 
+		Page<TaskModel> tasks =taskRepository.findAll(pageable);
+		//transformar model em response dto
+		Page<TaskResponseDto> responseDtos = tasks.map(taskMapper::toDto);
+		return responseDtos;
 	}
 	@Transactional
-	public TaskModel getTaskById(UUID taskId) {
+	public TaskResponseDto getTaskById(UUID taskId) {
 		logger.info("Fetching task by ID: {}", taskId);
-		return taskRepository.findById(taskId).orElseThrow(() -> {
+		TaskModel task= taskRepository.findById(taskId).orElseThrow(() -> {
 			logger.warn("Task not Found with Id: ", taskId);
 			throw new ResourceNotFoundException("Task not found");
 		});
+		return taskMapper.toDto(task);
 	}
 	@Transactional
-	public TaskModel saveTask(TaskModel taskModel) {
-		logger.info("Saving new task: {}", taskModel.getTitle());
-		UUID projectId = taskModel.getProject().getProjectId();
-		ProjectModel project = projectRepository.findById(projectId).
+	public TaskResponseDto saveTask(TaskRequestDto dto) {
+		logger.info("Saving new task: {}", dto.title());
+		ProjectModel project = projectRepository.findById(dto.projectId()).
 				orElseThrow(() -> {
-					logger.warn("Project not Found with Id: ", projectId);
+					logger.warn("Project not Found with Id: ", dto.projectId());
 					throw new ResourceNotFoundException("Project not found");
 				});
-		logger.info("Associating task with Project ID: {}", projectId);
+		logger.info("Associating task with Project ID: {}", dto.projectId());
+		TaskModel taskModel = taskMapper.toModel(dto);
 		taskModel.setProject(project);
-		return taskRepository.save(taskModel);
-		
+		TaskModel taskSalva =taskRepository.save(taskModel);
+		//transformar model em response dto
+		return taskMapper.toDto(taskSalva);
 	}
 	@Transactional
-	public TaskModel updateTaskStatus(UUID taskId, TaskModel taskModel) {
+	public TaskResponseDto updateTaskStatus(UUID taskId, TaskUpdateDto dto) {
 
-		TaskModel existingTask = getTaskById(taskId);
-
-		existingTask.setStatus(taskModel.getStatus());
+		TaskModel existingTask = taskRepository.findById(taskId).orElseThrow(() -> {
+			logger.warn("Task not Found with Id: ", taskId);
+			throw new ResourceNotFoundException("Task not found");
+		});
+		taskMapper.updateStatus(dto, existingTask);
 
 		logger.info("Updating task with ID: {}", taskId);
-		return taskRepository.save(existingTask);
+		TaskModel taskSalva= taskRepository.save(existingTask);
+		return taskMapper.toDto(taskSalva);
 	}
 	@Transactional
 	public void deleteTask(UUID taskId) {

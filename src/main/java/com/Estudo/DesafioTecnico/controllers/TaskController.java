@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.Estudo.DesafioTecnico.model.TaskModel;
+import com.Estudo.DesafioTecnico.dtos.TaskRequestDto;
+import com.Estudo.DesafioTecnico.dtos.TaskResponseDto;
+import com.Estudo.DesafioTecnico.dtos.TaskUpdateDto;
 import com.Estudo.DesafioTecnico.model.enums.EnumPriority;
 import com.Estudo.DesafioTecnico.model.enums.EnumStatus;
 import com.Estudo.DesafioTecnico.service.TaskService;
@@ -39,18 +41,18 @@ public class TaskController {
 	@PostMapping(value="/tasks", 
 			produces = MediaType.APPLICATION_JSON_VALUE,
 			consumes = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<TaskModel> createTask(@RequestBody @Valid TaskModel taskModel) {
-		logger.info("Received request to create task: {}", taskModel.getTitle());
-		TaskModel createdTask = taskService.saveTask(taskModel);
+	public ResponseEntity<TaskResponseDto> createTask(@RequestBody @Valid TaskRequestDto taskModel) {
+		logger.info("Received request to create task: {}", taskModel.title());
+		TaskResponseDto createdTask = taskService.saveTask(taskModel);
 		return ResponseEntity.ok(createdTask);
 	}
 	
 	@GetMapping(value ="/tasks", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<Page<TaskModel>> getTasksFiltered(@RequestParam UUID projectId,
+	public ResponseEntity<Page<TaskResponseDto>> getTasksFiltered(@RequestParam UUID projectId,
 			@RequestParam(required=false) EnumStatus status,
 			@RequestParam(required=false)EnumPriority priority,
 			Pageable pageable) {
-		Page<TaskModel> tasksFiltered=taskService.getTasksByStatusPriorityProjectId(projectId, status, priority, pageable);
+		Page<TaskResponseDto> tasksFiltered=taskService.getTasksByStatusPriorityProjectId(projectId, status, priority, pageable);
 		
 		return ResponseEntity.ok().body(tasksFiltered);
 	}
@@ -59,10 +61,10 @@ public class TaskController {
 	@PutMapping(value="/tasks/{taskId}/status", 
 			produces = MediaType.APPLICATION_JSON_VALUE,
 			consumes = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<TaskModel> updateTaskStatus(@PathVariable UUID taskId,
-			@RequestBody @Valid TaskModel status) {
+	public ResponseEntity<TaskResponseDto> updateTaskStatus(@PathVariable UUID taskId,
+			@RequestBody @Valid TaskUpdateDto status) {
 		logger.info("Received request to update task status with ID: {}", taskId);
-		TaskModel updatedTask = taskService.updateTaskStatus(taskId, status);
+		TaskResponseDto updatedTask = taskService.updateTaskStatus(taskId, status);
 		return ResponseEntity.ok(updatedTask);
 	}
 	
